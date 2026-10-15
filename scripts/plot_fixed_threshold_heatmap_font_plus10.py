@@ -53,20 +53,22 @@ FS = {
     "cbar_tick": 50,
 }
 
+RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument(
         "--summary_csv",
-        default="github_release_radio_map_shadow_detection/results/fixed_threshold_metrics/summary_metrics_fixed_threshold.csv",
+        default=str(RESULTS_DIR / "fixed_threshold_metrics/summary_metrics_fixed_threshold.csv"),
     )
     p.add_argument("--threshold", type=float, default=-65.0)
     p.add_argument("--freqs", type=int, nargs="+", default=[1750, 4750, 5750])
     p.add_argument("--models", nargs="+", default=MODEL_ORDER, choices=MODEL_ORDER)
-    p.add_argument("--out", default="github_release_radio_map_shadow_detection/results/fixed_threshold_th-65.png")
+    p.add_argument("--out", default=str(RESULTS_DIR / "fixed_threshold_th-65.png"))
     p.add_argument(
         "--out_copy",
-        default="github_release_radio_map_shadow_detection/results/fixed_threshold_metrics/heatmap_fixed_threshold_th-65_font_plus10.png",
+        default=str(RESULTS_DIR / "fixed_threshold_metrics/heatmap_fixed_threshold_th-65_font_plus10.png"),
     )
     p.add_argument("--vmin", type=float, default=0.0)
     p.add_argument("--vmax", type=float, default=1.0)
@@ -178,12 +180,12 @@ def plot_heatmap(args: argparse.Namespace) -> List[Path]:
 
 def main() -> None:
     args = parse_args()
-    if args.out == "github_release_radio_map_shadow_detection/results/fixed_threshold_th-65.png":
-        args.out = f"github_release_radio_map_shadow_detection/results/fixed_threshold_th{threshold_tag(args.threshold)}.png"
-    if args.out_copy == "github_release_radio_map_shadow_detection/results/fixed_threshold_metrics/heatmap_fixed_threshold_th-65_font_plus10.png":
-        args.out_copy = (
-            "github_release_radio_map_shadow_detection/results/fixed_threshold_metrics/"
-            f"heatmap_fixed_threshold_th{threshold_tag(args.threshold)}_font_plus10.png"
+    if args.out == str(RESULTS_DIR / "fixed_threshold_th-65.png"):
+        args.out = str(RESULTS_DIR / f"fixed_threshold_th{threshold_tag(args.threshold)}.png")
+    if args.out_copy == str(RESULTS_DIR / "fixed_threshold_metrics/heatmap_fixed_threshold_th-65_font_plus10.png"):
+        args.out_copy = str(
+            RESULTS_DIR / "fixed_threshold_metrics"
+            / f"heatmap_fixed_threshold_th{threshold_tag(args.threshold)}_font_plus10.png"
         )
     plot_heatmap(args)
 

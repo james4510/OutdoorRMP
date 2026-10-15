@@ -50,6 +50,15 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Project imports
 # ---------------------------------------------------------------------
 SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = next(
+    (
+        p
+        for p in (SCRIPT_DIR, *SCRIPT_DIR.parents, Path.cwd(), *Path.cwd().parents)
+        if (p / "ikeee" / "bratlab_dataset.py").exists()
+    ),
+    SCRIPT_DIR.parent,
+)
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(SCRIPT_DIR / "model"))
 

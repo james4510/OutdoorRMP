@@ -55,24 +55,26 @@ FS = {
     "zoom_title": 23,
 }
 
+REPRESENTATIVE_DIR = Path(__file__).resolve().parents[1] / "results" / "representative_1750_4750_5750"
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument(
         "--metric_csv",
-        default="github_release_radio_map_shadow_detection/results/representative_1750_4750_5750/metrics/per_sample_metrics_fixed_threshold.csv",
+        default=str(REPRESENTATIVE_DIR / "metrics/per_sample_metrics_fixed_threshold.csv"),
     )
     p.add_argument(
         "--boundary_csv",
-        default="github_release_radio_map_shadow_detection/results/representative_1750_4750_5750/boundary_cdf/per_sample_boundary_metrics.csv",
+        default=str(REPRESENTATIVE_DIR / "boundary_cdf/per_sample_boundary_metrics.csv"),
     )
     p.add_argument(
         "--miss_out_dir",
-        default="github_release_radio_map_shadow_detection/results/representative_1750_4750_5750/miss_cdf_font_plus10",
+        default=str(REPRESENTATIVE_DIR / "miss_cdf_font_plus10"),
     )
     p.add_argument(
         "--boundary_out_dir",
-        default="github_release_radio_map_shadow_detection/results/representative_1750_4750_5750/boundary_cdf_font_plus10",
+        default=str(REPRESENTATIVE_DIR / "boundary_cdf_font_plus10"),
     )
     p.add_argument("--freqs", type=int, nargs="+", default=[1750, 4750, 5750])
     p.add_argument("--zoom_freqs", type=int, nargs="+", default=[1750])

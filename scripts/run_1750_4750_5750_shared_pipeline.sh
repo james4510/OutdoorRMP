@@ -17,10 +17,15 @@ set -e
 # If SAMPLE_ID="auto", the script selects a common sample automatically.
 # ======================================================
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # --------- Edit only these if needed ---------
-ROOT="/home/james4510/OutdoorRadioMapPrediction/data"
-CKPT_DIR="./model_checkpoints"
-OUT_DIR="./results_1750_4750_5750"
+# Paths default to <repo>/data and <repo>/model_checkpoints and can also be
+# overridden from the environment, e.g. ROOT=/path/to/data bash scripts/...
+ROOT="${ROOT:-$REPO_ROOT/data}"
+CKPT_DIR="${CKPT_DIR:-$REPO_ROOT/model_checkpoints}"
+OUT_DIR="${OUT_DIR:-$REPO_ROOT/results_1750_4750_5750_regenerated}"
 
 FREQS="1750 4750 5750"
 THRESHOLDS="-70 -65 -60"
@@ -35,7 +40,6 @@ BOUNDARY_WIDTH=10
 NUM_WORKERS=4
 # --------------------------------------------
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 REQUIRED=(

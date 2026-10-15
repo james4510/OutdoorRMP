@@ -12,9 +12,11 @@ env/
 conda/
 *.egg-info/
 
-# Large local assets
+# Large local assets (the leading-slash entries also cover symlinks at the repo root)
 data/
 model_checkpoints/
+/data
+/model_checkpoints
 checkpoints_final/
 *.pth
 *.pt
@@ -34,3 +36,5 @@ runs/
 final_results/
 results_4750_simple/
 results_1750_4750_5750_regenerated/
+results_multi_seed_holdout/
+checkpoints/
