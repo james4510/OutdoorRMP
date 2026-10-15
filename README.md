@@ -1,9 +1,11 @@
 # Radio Map Prediction-based Shadow Region Detection in Sub-7 GHz Environments
 
-This repository contains the dataset loader, model definitions, training code,
-evaluation scripts and selected result figures for a comparative study of
-CNN-based RadioUNet and Transformer-based TransPathNet architectures for shadow
-region detection via deep learning-based Radio Map Prediction.
+English | [한국어](README.ko.md)
+
+This repository contains the dataset loader, model code, training code, evaluation scripts
+and selected result figures for a comparative study of CNN-based RadioUNet and
+Transformer-based TransPathNet architectures for shadow region detection via deep
+learning-based Radio Map Prediction.
 
 ## Main models
 
@@ -14,9 +16,10 @@ region detection via deep learning-based Radio Map Prediction.
 | TransPathNet-S | `transpathnet-small` | 38.09M |
 | TransPathNet-B | `transpathnet-base` | 111.44M |
 
-Both architectures are two-stage (coarse → fine) networks. The input has two
-channels (building mask, Gaussian-smoothed map of the three Tx positions) and the
-target is the received-power map normalized from [-90, 0] dBm to [0, 1], at 256×256.
+- Two-stage models: a coarse prediction followed by a fine prediction
+- Input: 2 channels (building mask, Gaussian-smoothed position map of the 3 transmitters)
+- Output: received power map normalized from [-90, 0] dBm to [0, 1]
+- Input and output size: 256 x 256
 
 ## Main evaluation setup
 
@@ -29,33 +32,30 @@ target is the received-power map normalized from [-90, 0] dBm to [0, 1], at 256�
 ## Repository structure
 
 ```text
-ikeee/                          # Python package: dataset, models, training
-  bratlab_dataset.py            # BRAT-Lab dataset and fixed 70/10/20 split dataloaders
-  bratlab_train.py              # training / single-checkpoint evaluation
+ikeee/                        dataset, models and training (Python package)
+  bratlab_dataset.py          BRAT-Lab dataset, 70/10/20 split with a fixed seed
+  bratlab_train.py            training and single-checkpoint evaluation
   model/
-    radiounet.py                # RadioUNet-S / -M
-    transpathnet_outdoor.py     # TransPathNet-S / -B (outdoor, 2-channel input)
-    transnext_backbone.py       # TransNeXt-style backbone used by TransPathNet
-    emcad_decoder.py            # EMCAD decoder used by TransPathNet
+    radiounet.py              RadioUNet-S / M
+    transpathnet_outdoor.py   TransPathNet-S / B (outdoor version, 2-channel input)
+    transnext_backbone.py     lightweight TransNeXt backbone for TransPathNet
+    emcad_decoder.py          EMCAD decoder for TransPathNet
 
 scripts/
-  # training
-  run_multi_seed_holdout_experiments.sh   # train -> evaluate -> aggregate over split seeds
-  resume_seed43_44_remaining.sh           # resume helper used for the seed 43/44 runs
-  aggregate_seed_metrics.py               # mean / std across seeds
-  # evaluation (needs data and checkpoints)
-  final_eval_metrics_fixed_threshold_heatmap.py
-  boundary_only_cdf_analysis.py
-  boundary_only_cdf_analysis_x10.py
-  final_qualitative_split_allpairs_v11.py
-  qualitative_shared_sample_1750_4750_5750.py
-  run_1750_4750_5750_shared_pipeline.sh
-  # plotting from existing CSV outputs
-  final_samplewise_cdf_v3.py
-  paper_missrate_cdf_builder.py
-  plot_existing_cdf_font_plus10.py
-  plot_fixed_threshold_heatmap_font_plus10.py
-  plot_rmse_vs_frequency_paper.py
+  run_multi_seed_holdout_experiments.sh           training, evaluation and aggregation over seeds
+  resume_seed43_44_remaining.sh                   resume script for the seed 43/44 runs
+  aggregate_seed_metrics.py                       mean and std across seeds
+  final_eval_metrics_fixed_threshold_heatmap.py   fixed-threshold metrics, heatmaps and tables
+  boundary_only_cdf_analysis.py                   boundary-only error and miss rate CDFs
+  boundary_only_cdf_analysis_x10.py               same as above, error axis 0-10 dB
+  final_qualitative_split_allpairs_v11.py         error map and shadow detection figures (one frequency)
+  qualitative_shared_sample_1750_4750_5750.py     error map and shadow detection figures (one sample, 3 frequencies)
+  run_1750_4750_5750_shared_pipeline.sh           pipeline for the representative results
+  final_samplewise_cdf_v3.py                      sample-wise miss rate CDF (CSV input)
+  paper_missrate_cdf_builder.py                   miss rate CDF figures and summary table (CSV input)
+  plot_existing_cdf_font_plus10.py                CDF figures with larger fonts (CSV input)
+  plot_fixed_threshold_heatmap_font_plus10.py     heatmap with larger fonts (CSV input)
+  plot_rmse_vs_frequency_paper.py                 RMSE vs. frequency figure (CSV input)
 
 results/
   fixed_threshold_metrics/
@@ -68,23 +68,24 @@ results/
 ## Data and checkpoints
 
 The dataset and checkpoints are not included in this repository.
-By default the scripts expect them at the repository root:
+Default locations:
 
 ```text
 data/
-  stations_position.txt                        # line n: row1 col1 row2 col2 row3 col3 (3 Tx of sample n)
+  stations_position.txt                       Tx positions per sample (row1 col1 row2 col2 row3 col3)
   buildings_position/buildings_{n}.mat
   receivedpower_{freq}MHz_mat/TOTAL_REC_{freq}MHz_{n}.mat
 model_checkpoints/
-  checkpoints_{model}_{size}_{freq}/best.pth    # e.g. checkpoints_transpathnet_base_4750/best.pth
+  checkpoints_{model}_{size}_{freq}/best.pth   e.g. checkpoints_transpathnet_base_4750/best.pth
 ```
 
-`n` runs from 1 to 2000. Samples that contain NaN or are smaller than 50×50 pixels are
-skipped (12 at 4750 MHz), so the test split has 400 samples (399 at 4750 MHz).
+- n = 1, ..., 2000
+- Invalid samples (NaN values, smaller than 50 x 50 pixels) are excluded: 12 samples at 4750 MHz
+- Test set: 400 samples (399 at 4750 MHz)
 
 ## Training
 
-Run from the repository root so that the `ikeee` package can be imported:
+Run from the repository root.
 
 ```bash
 python -m ikeee.bratlab_train --mode train \
@@ -93,13 +94,12 @@ python -m ikeee.bratlab_train --mode train \
     --save_dir model_checkpoints/checkpoints_radiounet_small_4750
 ```
 
-Use `--model radiounet --size small|medium` or `--model transpathnet --size small|base`.
-Training uses AdamW (weight decay 1e-4), cosine annealing (eta_min 1e-6), gradient
-clipping at 1.0, and the loss 0.6·MSE + 0.3·(1 − SSIM) + 0.1·MSE(aux) on the fine output
-plus 0.4 × the same loss on the coarse output. `best.pth` is the epoch with the lowest
-validation loss.
+- Models: `--model radiounet --size small|medium`, `--model transpathnet --size small|base`
+- Optimizer: AdamW (weight decay 1e-4), cosine annealing (eta_min 1e-6), gradient clipping 1.0
+- Loss: 0.6 * MSE + 0.3 * (1 - SSIM) + 0.1 * MSE(aux) for the fine output, plus 0.4 times the same loss for the coarse output
+- `best.pth`: checkpoint with the lowest validation loss
 
-Settings stored in the seed-42 checkpoints behind the results in `results/`:
+Training settings of the seed-42 checkpoints used for `results/`:
 
 | Model | Batch size | Learning rate | Epochs |
 |---|---|---|---|
@@ -108,10 +108,11 @@ Settings stored in the seed-42 checkpoints behind the results in `results/`:
 | TransPathNet-S | 2 | 1e-4 | 100 |
 | TransPathNet-B | 2 | 1e-4 | 100 |
 
-For RadioUNet-S at 4750 MHz the evaluation scripts load
-`checkpoints_radiounet_small_4750_v2/best.pth` (retrained with lr 3e-5) when it exists.
+- RadioUNet-S at 4750 MHz: the evaluation scripts use `checkpoints_radiounet_small_4750_v2/best.pth` (lr 3e-5) if it exists
 
-To evaluate a single checkpoint (RMSE / MAE / bias in dB on non-building pixels, plus example plots):
+### Single-checkpoint evaluation
+
+RMSE, MAE and bias (dB) over non-building pixels.
 
 ```bash
 python -m ikeee.bratlab_train --mode eval \
@@ -120,34 +121,32 @@ python -m ikeee.bratlab_train --mode eval \
     --result_dir runs/eval_radiounet_small_4750
 ```
 
-The default `--result_dir` is `./results`, so pass another directory to keep the
-tracked `results/` folder unchanged.
+- The default `--result_dir` is `./results`. Use another directory to keep `results/` unchanged.
 
-### Repeated random-split holdout
+### Repeated holdout with different split seeds
 
 ```bash
-DRY_RUN=1 bash scripts/run_multi_seed_holdout_experiments.sh   # print the commands only
+DRY_RUN=1 bash scripts/run_multi_seed_holdout_experiments.sh   # print commands only
 bash scripts/run_multi_seed_holdout_experiments.sh             # seeds 42-46, 1750/4750/5750 MHz
 ```
 
-Every setting can be overridden from the environment (`SEEDS`, `FREQS`, `MODELS`, `ROOT`,
-`OUT_DIR`, `EPOCHS`, ...). Outputs go to `results_multi_seed_holdout/`. The seed 43/44 runs
-used `TRANSPATHNET_BATCH_SIZE=2 TRANSPATHNET_ACCUM_STEPS=4 TRANSPATHNET_AMP=1`
-(RadioUNet: batch size 8, no AMP).
+- Settings can be changed with environment variables (`SEEDS`, `FREQS`, `MODELS`, `ROOT`, `OUT_DIR`, `EPOCHS`, etc.)
+- Output directory: `results_multi_seed_holdout/`
+- Seeds 43 and 44: TransPathNet with `TRANSPATHNET_BATCH_SIZE=2 TRANSPATHNET_ACCUM_STEPS=4 TRANSPATHNET_AMP=1`, RadioUNet with batch size 8 without AMP
 
 ## Reproducing representative results
 
 ```bash
 bash scripts/run_1750_4750_5750_shared_pipeline.sh
 
-# data / checkpoints stored elsewhere
+# data and checkpoints in other directories
 ROOT=/path/to/data CKPT_DIR=/path/to/model_checkpoints \
     bash scripts/run_1750_4750_5750_shared_pipeline.sh
 ```
 
-Outputs are written to `results_1750_4750_5750_regenerated/` (override with `OUT_DIR`).
+- Output directory: `results_1750_4750_5750_regenerated/` (set `OUT_DIR` to change it)
 
-## Which script produced which result
+## Result files and scripts
 
 | Result | Script |
 |---|---|
@@ -155,37 +154,29 @@ Outputs are written to `results_1750_4750_5750_regenerated/` (override with `OUT
 | `results/fixed_threshold_th-65.png`, `results/fixed_threshold_metrics/heatmap_fixed_threshold_th-65_font_plus10.png` | `plot_fixed_threshold_heatmap_font_plus10.py` |
 | `results/samplewise_cdf/fig_cdf_missrate_*.png` | `final_samplewise_cdf_v3.py` |
 | `results/samplewise_cdf/samplewise_miss_rate_rows.csv`, `cdf_summary_table.csv` | `paper_missrate_cdf_builder.py` |
-| `results/samplewise_cdf/samplewise_error_rates.csv` | legacy script, see Notes |
+| `results/samplewise_cdf/samplewise_error_rates.csv` | earlier script (see Notes) |
 | `results/boundary_cdf/fig_boundary_{error,combined}_cdf_th-65_bw10.png` | `boundary_only_cdf_analysis.py` |
 | other files in `results/boundary_cdf/` | `boundary_only_cdf_analysis_x10.py` |
 | `results/qualitative_3750/` | `final_qualitative_split_allpairs_v11.py` (3750 MHz, sample 1486) |
 | `results/representative_1750_4750_5750/{metrics,miss_cdf,boundary_cdf,qualitative}/` | `run_1750_4750_5750_shared_pipeline.sh` (`final_eval_metrics_fixed_threshold_heatmap.py`, `final_samplewise_cdf_v3.py`, `boundary_only_cdf_analysis_x10.py`, `qualitative_shared_sample_1750_4750_5750.py`) |
 | `results/representative_1750_4750_5750/*_font_plus10/` | `plot_existing_cdf_font_plus10.py` |
 
-All checkpoint-based results use the seed-42 70/10/20 split, i.e. the same test samples.
+- All checkpoint-based results are computed on the same test samples (seed 42 split).
 
 ## Notes
 
 - `model_checkpoints/` and raw dataset files are excluded from this repository.
 - CSV files included under `results/` are selected outputs for reproducibility and visualization.
 - Figures are selected representative results used for paper and lab meeting discussion.
-  Some were made with earlier revisions of the plotting code, so re-running the current
-  scripts can change fonts or layout.
-- `results/samplewise_cdf/samplewise_error_rates.csv` comes from an earlier sample-wise CDF
-  script that used frequency-dependent thresholds (1750: -61.7, 2750: -64.9, 3750: -67.4,
-  4750: -69.5, 5750: -71.1 dBm). That script is no longer available;
-  `final_samplewise_cdf_v3.py` is its fixed-threshold replacement.
-- `plot_rmse_vs_frequency_paper.py` defaults to the 5-frequency `summary_metrics_long.csv` of the
-  original workspace, which is not included. Pass `--summary_csv` (any summary CSV with
-  `rmse_dbm_mean` / `rmse_dbm_std` columns, e.g.
-  `results/fixed_threshold_metrics/summary_metrics_fixed_threshold.csv`) and `--out`.
+- Some figures were generated with earlier versions of the plotting scripts. Running the current scripts may give different font sizes or layouts.
+- `results/samplewise_cdf/samplewise_error_rates.csv` was generated by an earlier script with frequency-dependent thresholds (1750: -61.7, 2750: -64.9, 3750: -67.4, 4750: -69.5, 5750: -71.1 dBm). The script is not available. `final_samplewise_cdf_v3.py` is the fixed-threshold version.
+- `plot_rmse_vs_frequency_paper.py` reads `summary_metrics_long.csv` of the 5-frequency evaluation by default, which is not included. Set `--summary_csv` and `--out` when running it. Any summary CSV with `rmse_dbm_mean` and `rmse_dbm_std` columns works, e.g. `results/fixed_threshold_metrics/summary_metrics_fixed_threshold.csv`.
 
 ## References
 
-The model code re-implements or adapts:
+The model code is based on the following works.
 
-- RadioUNet: R. Levie et al., "RadioUNet: Fast Radio Map Estimation With Convolutional Neural
-  Networks," IEEE Transactions on Wireless Communications, 2021 (arXiv:1911.09002)
+- RadioUNet: R. Levie et al., "RadioUNet: Fast Radio Map Estimation With Convolutional Neural Networks," IEEE Transactions on Wireless Communications, 2021 (arXiv:1911.09002)
 - TransPathNet: https://github.com/LiXin97/TransPathNet
 - TransNeXt: https://github.com/DaiShiResearch/TransNeXt (Apache-2.0)
 - EMCAD: Rahman et al., CVPR 2024, https://github.com/SLDGroup/EMCAD
