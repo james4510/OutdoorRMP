@@ -50,14 +50,23 @@ from matplotlib.colors import LinearSegmentedColormap
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = next(
+    (
+        p
+        for p in (SCRIPT_DIR, *SCRIPT_DIR.parents, Path.cwd(), *Path.cwd().parents)
+        if (p / "ikeee" / "bratlab_dataset.py").exists()
+    ),
+    SCRIPT_DIR.parent,
+)
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(SCRIPT_DIR / "model"))
 
-from bratlab_dataset import get_dataloaders
+from ikeee.bratlab_dataset import get_dataloaders
 
 try:
-    from model.radiounet import build_radiounet
-    from model.transpathnet_outdoor import build_transpathnet
+    from ikeee.model.radiounet import build_radiounet
+    from ikeee.model.transpathnet_outdoor import build_transpathnet
 except Exception:
     from radiounet import build_radiounet
     from transpathnet_outdoor import build_transpathnet
@@ -478,7 +487,7 @@ def error_cmap():
 def plot_error_maps_for_freq(freq: int, sample_id: int, gt_dbm: np.ndarray,
                              building: np.ndarray, preds: Dict[str, np.ndarray],
                              out_dir: Path, threshold: float, vmax: float, dpi: int):
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(24, 25))
     cmap = error_cmap()
 
     last_im = None
@@ -491,20 +500,21 @@ def plot_error_maps_for_freq(freq: int, sample_id: int, gt_dbm: np.ndarray,
             cmap_local.set_bad((0.84, 0.84, 0.84, 1.0))
             last_im = ax.imshow(display, cmap=cmap_local, vmin=0, vmax=vmax, origin="lower", interpolation="nearest")
             ax.set_title(
-                f"{MODELS_CONFIG[tag]['label']}\nMean: {np.nanmean(display):.2f} dB | Max: {np.nanmax(display):.2f} dB",
-                fontsize=12,
+                f"{MODELS_CONFIG[tag]['label']}\n"
+                f"Mean: {np.nanmean(display):.2f} dB\n"
+                f"Max: {np.nanmax(display):.2f} dB",
+                fontsize=50,
                 fontweight="bold",
+                pad=34,
             )
             ax.axis("off")
 
-    cbar = fig.colorbar(last_im, ax=axes.ravel().tolist(), shrink=0.86, pad=0.02)
-    cbar.set_label("Absolute RSS Error (dB)", fontsize=11)
+    fig.subplots_adjust(left=0.04, right=0.82, bottom=0.04, top=0.96, wspace=0.24, hspace=0.62)
+    cbar_ax = fig.add_axes([0.87, 0.20, 0.028, 0.56])
+    cbar = fig.colorbar(last_im, cax=cbar_ax)
+    cbar.set_label("Absolute RSS Error (dB)", fontsize=48, labelpad=28)
+    cbar.ax.tick_params(labelsize=48)
 
-    fig.suptitle(
-        f"Error Map Comparison | Sample {sample_id} | {freq} MHz",
-        fontsize=17,
-        fontweight="bold",
-    )
     path = out_dir / f"error_map_4models_{freq}MHz_sample{sample_id}_th{threshold_tag(threshold)}.png"
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
@@ -514,7 +524,7 @@ def plot_error_maps_for_freq(freq: int, sample_id: int, gt_dbm: np.ndarray,
 def plot_shadow_maps_for_freq(freq: int, sample_id: int, gt_dbm: np.ndarray,
                               building: np.ndarray, preds: Dict[str, np.ndarray],
                               out_dir: Path, threshold: float, dpi: int):
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(24, 25))
 
     for r, row in enumerate(DISPLAY_GRID):
         for c, tag in enumerate(row):
@@ -524,26 +534,22 @@ def plot_shadow_maps_for_freq(freq: int, sample_id: int, gt_dbm: np.ndarray,
             ax.imshow(shadow_rgba(TP, FP, FN, building), origin="lower", interpolation="nearest")
             ax.set_title(
                 f"{MODELS_CONFIG[tag]['label']}\n"
-                f"TP:{m['TP']:,} FP:{m['FP']:,} FN:{m['FN']:,} | R:{m['recall']:.3f} F1:{m['f1']:.3f}",
-                fontsize=12,
+                f"TP:{m['TP']:,} FP:{m['FP']:,}\n"
+                f"FN:{m['FN']:,} R:{m['recall']:.3f} F1:{m['f1']:.3f}",
+                fontsize=50,
                 fontweight="bold",
+                pad=34,
             )
             ax.axis("off")
 
     handles = [
-        mpatches.Patch(color=COLOR_TP, label="TP: Correct shadow"),
-        mpatches.Patch(color=COLOR_FP, label="FP: False alarm"),
-        mpatches.Patch(color=COLOR_FN, label="FN: Missed shadow"),
+        mpatches.Patch(color=COLOR_TP, label="TP"),
+        mpatches.Patch(color=COLOR_FP, label="FP"),
+        mpatches.Patch(color=COLOR_FN, label="FN"),
         mpatches.Patch(color=COLOR_BUILDING, label="Building / Excluded"),
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=4, fontsize=11, frameon=True)
-
-    fig.suptitle(
-        f"Shadow Region Detection Comparison | Sample {sample_id} | {freq} MHz | Threshold {threshold:.1f} dBm",
-        fontsize=17,
-        fontweight="bold",
-    )
-    fig.tight_layout(rect=[0, 0.06, 1, 0.94])
+    fig.subplots_adjust(left=0.04, right=0.96, bottom=0.11, top=0.96, wspace=0.12, hspace=0.68)
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.018), ncol=4, fontsize=48, frameon=True)
     path = out_dir / f"shadow_detection_4models_{freq}MHz_sample{sample_id}_th{threshold_tag(threshold)}.png"
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
@@ -574,17 +580,18 @@ def plot_allfreqs_error(freq_data: Dict[int, Dict[str, object]], sample_id: int,
             last_im = ax.imshow(display, cmap=cmap_local, vmin=0, vmax=vmax, origin="lower", interpolation="nearest")
             ax.set_title(
                 f"{freq} MHz | {MODELS_CONFIG[tag]['label']}\nMean {np.nanmean(display):.2f} dB",
-                fontsize=10,
+                fontsize=20,
                 fontweight="bold",
             )
             ax.axis("off")
 
     cbar = fig.colorbar(last_im, ax=axes.ravel().tolist(), shrink=0.86, pad=0.01)
-    cbar.set_label("Absolute RSS Error (dB)", fontsize=10)
+    cbar.set_label("Absolute RSS Error (dB)", fontsize=20)
+    cbar.ax.tick_params(labelsize=20)
 
     fig.suptitle(
         f"Error Map Comparison across Frequencies | Shared Sample {sample_id}",
-        fontsize=17,
+        fontsize=27,
         fontweight="bold",
     )
     path = out_dir / f"error_map_allfreqs_sample{sample_id}_th{threshold_tag(threshold)}.png"
@@ -613,7 +620,7 @@ def plot_allfreqs_shadow(freq_data: Dict[int, Dict[str, object]], sample_id: int
             ax.set_title(
                 f"{freq} MHz | {MODELS_CONFIG[tag]['label']}\n"
                 f"FP:{m['FP']:,} FN:{m['FN']:,} R:{m['recall']:.3f}",
-                fontsize=10,
+                fontsize=20,
                 fontweight="bold",
             )
             ax.axis("off")
@@ -624,10 +631,10 @@ def plot_allfreqs_shadow(freq_data: Dict[int, Dict[str, object]], sample_id: int
         mpatches.Patch(color=COLOR_FN, label="FN: Missed shadow"),
         mpatches.Patch(color=COLOR_BUILDING, label="Building / Excluded"),
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=4, fontsize=11, frameon=True)
+    fig.legend(handles=handles, loc="lower center", ncol=4, fontsize=21, frameon=True)
     fig.suptitle(
         f"Shadow Region Detection across Frequencies | Shared Sample {sample_id} | T={threshold:.1f} dBm",
-        fontsize=17,
+        fontsize=27,
         fontweight="bold",
     )
     fig.tight_layout(rect=[0, 0.06, 1, 0.94])

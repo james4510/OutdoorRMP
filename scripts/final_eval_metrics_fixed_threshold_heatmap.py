@@ -62,12 +62,21 @@ import matplotlib.pyplot as plt
 # Project imports
 # ---------------------------------------------------------------------
 SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = next(
+    (
+        p
+        for p in (SCRIPT_DIR, *SCRIPT_DIR.parents, Path.cwd(), *Path.cwd().parents)
+        if (p / "ikeee" / "bratlab_dataset.py").exists()
+    ),
+    SCRIPT_DIR.parent,
+)
+sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(SCRIPT_DIR / "model"))
 
 
 def _import_get_dataloaders():
-    import bratlab_dataset as ds_mod
+    import ikeee.bratlab_dataset as ds_mod
 
     # Prefer explicitly fixed dataloader if it exists.
     if hasattr(ds_mod, "get_dataloaders_fixed"):
@@ -86,8 +95,8 @@ def _import_get_dataloaders():
 get_dataloaders = _import_get_dataloaders()
 
 try:
-    from model.radiounet import build_radiounet
-    from model.transpathnet_outdoor import build_transpathnet
+    from ikeee.model.radiounet import build_radiounet
+    from ikeee.model.transpathnet_outdoor import build_transpathnet
 except Exception:
     from radiounet import build_radiounet
     from transpathnet_outdoor import build_transpathnet
@@ -159,6 +168,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--img_size", type=int, default=256)
     p.add_argument("--num_workers", type=int, default=4)
     p.add_argument("--batch_size", type=int, default=1)
+    p.add_argument("--seed", type=int, default=42,
+                   help="Random seed used for train/val/test split generation")
 
     p.add_argument("--min_dbm", type=float, default=-90.0)
     p.add_argument("--max_dbm", type=float, default=0.0)
@@ -329,7 +340,7 @@ def compute_shadow_metrics(
 # ---------------------------------------------------------------------
 def evaluate(cfg: argparse.Namespace) -> List[Dict[str, Any]]:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    print(f"Device: {device} | Split seed: {cfg.seed}")
 
     rows: List[Dict[str, Any]] = []
 
@@ -346,6 +357,7 @@ def evaluate(cfg: argparse.Namespace) -> List[Dict[str, Any]]:
             img_size=cfg.img_size,
             batch_size=cfg.batch_size,
             num_workers=cfg.num_workers,
+            seed=cfg.seed,
         )
 
         with torch.no_grad():
@@ -384,6 +396,7 @@ def evaluate(cfg: argparse.Namespace) -> List[Dict[str, Any]]:
                             )
 
                             row = {
+                                "seed": int(cfg.seed),
                                 "freq_mhz": int(freq),
                                 "sample_id": int(sample_id),
                                 "sample_rank_in_test_loader": int(batch_idx * bsz + b),
@@ -428,6 +441,7 @@ def summarize(rows: List[Dict[str, Any]], freqs: List[int],
                     continue
 
                 item = {
+                    "seed": int(sub[0].get("seed", -1)),
                     "threshold_dbm": float(threshold),
                     "freq_mhz": int(freq),
                     "model_tag": tag,
@@ -519,11 +533,11 @@ def plot_heatmap_for_threshold(
 
         ax.set_title(METRIC_TITLES[metric], fontsize=15, fontweight="bold")
         ax.set_xticks(np.arange(len(model_tags)))
-        ax.set_xticklabels([MODELS_CONFIG[t]["label"] for t in model_tags], fontsize=10)
+        ax.set_xticklabels([MODELS_CONFIG[t]["label"] for t in model_tags], fontsize=20)
         ax.set_yticks(np.arange(len(freqs)))
-        ax.set_yticklabels([f"{f}" for f in freqs], fontsize=10)
-        ax.set_xlabel("Model", fontsize=11)
-        ax.set_ylabel("Frequency (MHz)", fontsize=11)
+        ax.set_yticklabels([f"{f}" for f in freqs], fontsize=20)
+        ax.set_xlabel("Model", fontsize=21)
+        ax.set_ylabel("Frequency (MHz)", fontsize=21)
 
         # Annotate values and bold the best model for each frequency.
         for i in range(len(freqs)):
@@ -536,10 +550,10 @@ def plot_heatmap_for_threshold(
                 # Choose readable text color.
                 text_color = "white" if np.isfinite(val) and val < (vmin + vmax) / 2 else "black"
                 ax.text(j, i, txt, ha="center", va="center",
-                        fontsize=10, fontweight=weight, color=text_color)
+                        fontsize=20, fontweight=weight, color=text_color)
 
         cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label("Score", fontsize=10)
+        cbar.set_label("Score", fontsize=20)
 
     fig.suptitle(
         f"Shadow Detection Metrics under Fixed Threshold {threshold:.1f} dBm",
@@ -650,7 +664,7 @@ def main() -> None:
     rows = evaluate(cfg)
 
     per_sample_fields = [
-        "freq_mhz", "sample_id", "sample_rank_in_test_loader",
+        "seed", "freq_mhz", "sample_id", "sample_rank_in_test_loader",
         "model_tag", "model_label", "threshold_dbm",
         "TP", "FP", "FN", "TN",
         "gt_shadow_pixels", "pred_shadow_pixels", "valid_pixels",
@@ -666,7 +680,7 @@ def main() -> None:
     summary = summarize(rows, cfg.freqs, cfg.models, cfg.thresholds)
 
     summary_fields = [
-        "threshold_dbm", "freq_mhz", "model_tag", "model_label", "n_samples",
+        "seed", "threshold_dbm", "freq_mhz", "model_tag", "model_label", "n_samples",
     ]
     for metric in [
         "precision", "recall", "iou", "f1",
@@ -719,6 +733,7 @@ def main() -> None:
             "- heatmaps use sample-wise mean Precision / Recall / IoU / F1-score.",
             "- summary CSV also includes micro metrics from accumulated TP/FP/FN/TN.",
             "- RMSE and MAE are threshold-independent but saved for consistency.",
+            f"- split seed: {cfg.seed}",
         ]),
         encoding="utf-8",
     )

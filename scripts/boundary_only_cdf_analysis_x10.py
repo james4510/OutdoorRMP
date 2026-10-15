@@ -87,11 +87,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(SCRIPT_DIR / "model"))
 
-from bratlab_dataset import get_dataloaders
+from ikeee.bratlab_dataset import get_dataloaders
 
 try:
-    from model.radiounet import build_radiounet
-    from model.transpathnet_outdoor import build_transpathnet
+    from ikeee.model.radiounet import build_radiounet
+    from ikeee.model.transpathnet_outdoor import build_transpathnet
 except Exception:
     from radiounet import build_radiounet
     from transpathnet_outdoor import build_transpathnet
@@ -456,13 +456,13 @@ def plot_cdf_grid(rows: List[Dict[str, object]],
             )
 
         ax.set_title(f"{freq} MHz\nT={threshold:.1f} dBm", fontsize=12, fontweight="bold")
-        ax.set_xlabel(xlabel, fontsize=11)
+        ax.set_xlabel(xlabel, fontsize=21)
         ax.set_xlim(0, x_max)
         ax.set_ylim(0, 1.0)
         ax.set_yticks(np.linspace(0, 1, 6))
         ax.grid(True, alpha=0.3)
 
-    axes[0].set_ylabel("CDF", fontsize=11)
+    axes[0].set_ylabel("CDF", fontsize=21)
 
     handles, labels = axes[-1].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=len(model_tags), frameon=True, bbox_to_anchor=(0.5, -0.02))
@@ -489,7 +489,7 @@ def plot_combined_grid(rows: List[Dict[str, object]],
     x_error = np.arange(0.0, error_x_max + error_x_step, error_x_step)
     x_miss = np.arange(0.0, miss_x_max + miss_x_step, miss_x_step)
 
-    fig, axes = plt.subplots(2, len(freqs), figsize=(4.8 * len(freqs), 8.8), sharey="row")
+    fig, axes = plt.subplots(2, len(freqs), figsize=(5.55 * len(freqs), 8.8), sharey="row")
     if len(freqs) == 1:
         axes = np.array([[axes[0]], [axes[1]]])
 
@@ -517,24 +517,24 @@ def plot_combined_grid(rows: List[Dict[str, object]],
                 )
 
         axes[0, col].set_title(f"{freq} MHz\nT={threshold:.1f} dBm", fontsize=12, fontweight="bold")
-        axes[0, col].set_xlabel("Boundary RSS Error (dB)", fontsize=10)
+        axes[0, col].set_xlabel("Threshold-margin RSS Error (dB)", fontsize=21)
         axes[0, col].set_xlim(0, error_x_max)
         axes[0, col].set_ylim(0, 1.0)
         axes[0, col].grid(True, alpha=0.3)
 
-        axes[1, col].set_xlabel("Boundary Miss Rate", fontsize=10)
+        axes[1, col].set_xlabel("Threshold-margin Miss Rate", fontsize=21)
         axes[1, col].set_xlim(0, miss_x_max)
         axes[1, col].set_ylim(0, 1.0)
         axes[1, col].grid(True, alpha=0.3)
 
-    axes[0, 0].set_ylabel("CDF\n(Error)", fontsize=11)
-    axes[1, 0].set_ylabel("CDF\n(Miss Rate)", fontsize=11)
+    axes[0, 0].set_ylabel("CDF\n(Error)", fontsize=21)
+    axes[1, 0].set_ylabel("CDF\n(Miss Rate)", fontsize=21)
 
     handles, labels = axes[0, -1].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=len(model_tags), frameon=True, bbox_to_anchor=(0.5, -0.02))
     fig.suptitle(f"Boundary-only Error and Miss Rate CDF | {threshold_label}",
                  fontsize=16, fontweight="bold")
-    fig.tight_layout(rect=[0, 0.06, 1, 0.94])
+    fig.tight_layout(rect=[0, 0.06, 1, 0.94], w_pad=4.8, h_pad=2.2)
     fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {out_path}")
@@ -687,7 +687,7 @@ def main() -> None:
             rows=rows,
             metric=cfg.error_metric,
             metric_title="Boundary-only RSS Error",
-            xlabel="Sample-wise Boundary RSS Error (dB)",
+            xlabel="Sample-wise Threshold-margin RSS Error (dB)",
             freqs=cfg.freqs,
             model_tags=cfg.models,
             thresholds_by_freq=thresholds_by_freq,

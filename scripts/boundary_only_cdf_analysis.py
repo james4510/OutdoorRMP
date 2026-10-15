@@ -87,11 +87,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(SCRIPT_DIR / "model"))
 
-from bratlab_dataset import get_dataloaders
+from ikeee.bratlab_dataset import get_dataloaders
 
 try:
-    from model.radiounet import build_radiounet
-    from model.transpathnet_outdoor import build_transpathnet
+    from ikeee.model.radiounet import build_radiounet
+    from ikeee.model.transpathnet_outdoor import build_transpathnet
 except Exception:
     from radiounet import build_radiounet
     from transpathnet_outdoor import build_transpathnet
