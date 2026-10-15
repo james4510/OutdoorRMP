@@ -1,0 +1,48 @@
+# Usage (repository root):
+#   bash docker/setup_env.sh [DATA_DIR] [CKPT_DIR]   # create .env
+#   docker compose build
+#   docker compose run --rm rmp python scripts/check_setup.py
+#   docker compose run --rm rmp bash scripts/run_1750_4750_5750_shared_pipeline.sh
+#
+# The repository is mounted at /workspace, so outputs are written to the host folders.
+
+x-rmp-common: &rmp-common
+  image: outdoor-rmp:latest
+  build:
+    context: .
+    dockerfile: Dockerfile
+  user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+  working_dir: /workspace
+  shm_size: "8gb"
+  volumes:
+    - .:/workspace
+    # fail with a clear error instead of creating empty root-owned folders
+    - type: bind
+      source: ${DATA_DIR:-./data}
+      target: /workspace/data
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ${CKPT_DIR:-./model_checkpoints}
+      target: /workspace/model_checkpoints
+      bind:
+        create_host_path: false
+
+services:
+  # GPU (NVIDIA Container Toolkit required)
+  rmp:
+    <<: *rmp-common
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # CPU only (evaluation and plotting without a GPU)
+  rmp-cpu:
+    <<: *rmp-common
+    environment:
+      CUDA_VISIBLE_DEVICES: ""

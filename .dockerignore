@@ -1,0 +1,22 @@
+.git
+.env
+**/__pycache__
+**/*.pyc
+
+# data, checkpoints and regenerated outputs are mounted at run time
+data
+model_checkpoints
+checkpoints
+runs
+final_results
+results_4750_simple
+results_1750_4750_5750_regenerated
+results_multi_seed_holdout
+*.pth
+*.pt
+*.ckpt
+*.mat
+*.npy
+*.npz
+
+docs/*.docx

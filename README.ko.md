@@ -31,6 +31,14 @@
 ## 저장소 구조
 
 ```text
+Dockerfile                    실행 이미지 (CUDA 11.8, PyTorch 2.2.0)
+docker-compose.yml            컨테이너 실행 설정 (rmp: GPU, rmp-cpu: CPU)
+docker/
+  requirements.txt            베이스 이미지에 추가로 설치하는 패키지
+  setup_env.sh                .env 생성 (사용자 ID, 데이터와 체크포인트 경로)
+docs/
+  [OutdoorRMP]설치메뉴얼.docx   설치 매뉴얼
+
 ikeee/                        데이터셋, 모델, 학습 코드 (Python 패키지)
   bratlab_dataset.py          BRAT-Lab 데이터셋, 고정 seed 기반 70/10/20 분할
   bratlab_train.py            학습, 단일 체크포인트 평가
@@ -41,6 +49,7 @@ ikeee/                        데이터셋, 모델, 학습 코드 (Python 패키
     emcad_decoder.py          TransPathNet용 EMCAD decoder
 
 scripts/
+  check_setup.py                                  패키지, GPU, 데이터셋, 체크포인트 확인
   run_multi_seed_holdout_experiments.sh           seed별 학습, 평가, 집계
   resume_seed43_44_remaining.sh                   seed 43/44 실험 재개
   aggregate_seed_metrics.py                       seed 간 평균, 표준편차 계산
@@ -81,6 +90,26 @@ model_checkpoints/
 - n = 1, ..., 2000
 - NaN 값이 있거나 50 x 50 픽셀보다 작은 샘플은 제외한다 (4750 MHz에서 12개).
 - 테스트 샘플 수: 400개 (4750 MHz는 399개)
+
+## Docker로 설치
+
+- 단계별 설치 방법은 `docs/[OutdoorRMP]설치메뉴얼.docx`에 정리했다.
+- 필요 환경: Docker Engine, Docker Compose v2, NVIDIA 드라이버, NVIDIA Container Toolkit
+- 이미지: `outdoor-rmp:latest` (CUDA 11.8, PyTorch 2.2.0)
+- 저장소 폴더를 컨테이너의 `/workspace`에 연결하므로, 결과 파일은 호스트의 저장소 폴더에 저장된다.
+
+```bash
+git clone https://github.com/james4510/OutdoorRMP.git
+cd OutdoorRMP
+docker compose build
+bash docker/setup_env.sh /path/to/data /path/to/model_checkpoints   # .env 생성
+docker compose run --rm rmp python scripts/check_setup.py           # "Result: OK" 확인
+docker compose run --rm rmp bash scripts/run_1750_4750_5750_shared_pipeline.sh
+```
+
+- 이 문서의 모든 명령은 `docker compose run --rm rmp <명령>` 형태로 컨테이너에서 실행할 수 있다.
+- `rmp-cpu`는 같은 이미지를 GPU 없이 실행한다 (평가, 그림 생성).
+- Windows에서는 Docker Desktop(WSL 2 기반)을 설치하고 WSL(Ubuntu) 터미널에서 명령을 실행한다.
 
 ## 학습
 

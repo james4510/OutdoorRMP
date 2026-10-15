@@ -32,6 +32,14 @@ learning-based Radio Map Prediction.
 ## Repository structure
 
 ```text
+Dockerfile                    runtime image (CUDA 11.8, PyTorch 2.2.0)
+docker-compose.yml            container settings (rmp: GPU, rmp-cpu: CPU)
+docker/
+  requirements.txt            packages installed on top of the base image
+  setup_env.sh                creates .env (user IDs, data and checkpoint paths)
+docs/
+  [OutdoorRMP]설치메뉴얼.docx   installation manual (Korean)
+
 ikeee/                        dataset, models and training (Python package)
   bratlab_dataset.py          BRAT-Lab dataset, 70/10/20 split with a fixed seed
   bratlab_train.py            training and single-checkpoint evaluation
@@ -42,6 +50,7 @@ ikeee/                        dataset, models and training (Python package)
     emcad_decoder.py          EMCAD decoder for TransPathNet
 
 scripts/
+  check_setup.py                                  checks packages, GPU, dataset and checkpoints
   run_multi_seed_holdout_experiments.sh           training, evaluation and aggregation over seeds
   resume_seed43_44_remaining.sh                   resume script for the seed 43/44 runs
   aggregate_seed_metrics.py                       mean and std across seeds
@@ -82,6 +91,27 @@ model_checkpoints/
 - n = 1, ..., 2000
 - Invalid samples (NaN values, smaller than 50 x 50 pixels) are excluded: 12 samples at 4750 MHz
 - Test set: 400 samples (399 at 4750 MHz)
+
+## Installation with Docker
+
+A step-by-step guide in Korean is in `docs/[OutdoorRMP]설치메뉴얼.docx`.
+
+- Requirements: Docker Engine, Docker Compose v2, NVIDIA driver and NVIDIA Container Toolkit
+- Image: `outdoor-rmp:latest` (CUDA 11.8, PyTorch 2.2.0)
+- The repository is mounted at `/workspace`, so outputs are written to the repository folder on the host.
+
+```bash
+git clone https://github.com/james4510/OutdoorRMP.git
+cd OutdoorRMP
+docker compose build
+bash docker/setup_env.sh /path/to/data /path/to/model_checkpoints   # creates .env
+docker compose run --rm rmp python scripts/check_setup.py           # should print "Result: OK"
+docker compose run --rm rmp bash scripts/run_1750_4750_5750_shared_pipeline.sh
+```
+
+- Every command in this README can be run in the container as `docker compose run --rm rmp <command>`.
+- `rmp-cpu` runs the same image without a GPU (evaluation and plotting).
+- Windows: install Docker Desktop (WSL 2 backend) and run the commands in a WSL (Ubuntu) terminal.
 
 ## Training
 
