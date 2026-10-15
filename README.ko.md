@@ -110,6 +110,33 @@ docker compose run --rm rmp bash scripts/run_1750_4750_5750_shared_pipeline.sh
 - 이 문서의 모든 명령은 `docker compose run --rm rmp <명령>` 형태로 컨테이너에서 실행할 수 있다.
 - `rmp-cpu`는 같은 이미지를 GPU 없이 실행한다 (평가, 그림 생성).
 - Windows에서는 Docker Desktop(WSL 2 기반)을 설치하고 WSL(Ubuntu) 터미널에서 명령을 실행한다.
+  - Docker Desktop의 Settings > Resources > WSL integration에서 Ubuntu를 켠다. 꺼져 있으면 `The command 'docker' could not be found in this WSL 2 distro`가 출력된다.
+  - NVIDIA Container Toolkit은 Docker Desktop에 포함되어 있어 따로 설치하지 않는다. Windows용 NVIDIA 드라이버만 있으면 된다.
+  - 저장소, 데이터셋, 체크포인트는 `/mnt/c`가 아닌 WSL 홈 디렉토리 아래에 둔다.
+- 검증 환경: Ubuntu 20.04 + RTX 2080 Ti, Windows 11 25H2 + WSL 2(Ubuntu 26.04) + Docker Desktop(Docker 29.4.3) + GTX 1050(드라이버 560.94)
+
+### 테스트 데이터로 동작 확인
+
+- 전체 데이터셋을 받기 전에 40샘플 테스트 데이터(`docker_test_data_40samples.tar.gz`)로 학습과 평가가 동작하는지 확인할 수 있다.
+- 압축을 풀면 `data/` 폴더가 생기며, `check_setup.py`에서 폴더마다 `(40 files)`, 체크포인트는 모두 `-`로 표시되면 정상이다.
+
+```bash
+tar -xzf docker_test_data_40samples.tar.gz -C .
+bash docker/setup_env.sh
+docker compose run --rm rmp python scripts/check_setup.py
+docker compose run --rm rmp python -m ikeee.bratlab_train --mode train \
+    --root data --freq 4750 --model radiounet --size small \
+    --batch_size 4 --amp --epochs 1 --num_workers 2 \
+    --save_dir model_checkpoints/checkpoints_test_radiounet_small_4750
+docker compose run --rm rmp python -m ikeee.bratlab_train --mode eval \
+    --root data --freq 4750 --model radiounet --size small \
+    --ckpt model_checkpoints/checkpoints_test_radiounet_small_4750/best.pth \
+    --result_dir runs/eval_test_radiounet_small_4750
+```
+
+- 평가 끝에 Test RMSE, MAE, Bias, SSIM 표가 출력되면 정상이다. 1 epoch 학습이라 오차 값은 크다.
+- GPU 메모리가 부족하면 `--batch_size 2`로 낮춘다. `UserWarning: Applied workaround for CuDNN issue, install nvrtc.so` 경고는 무시해도 된다.
+- 확인이 끝나면 `data/`를 전체 데이터셋으로 교체하고 `setup_env.sh`를 다시 실행한다.
 
 ## 학습
 

@@ -112,6 +112,33 @@ docker compose run --rm rmp bash scripts/run_1750_4750_5750_shared_pipeline.sh
 - Every command in this README can be run in the container as `docker compose run --rm rmp <command>`.
 - `rmp-cpu` runs the same image without a GPU (evaluation and plotting).
 - Windows: install Docker Desktop (WSL 2 backend) and run the commands in a WSL (Ubuntu) terminal.
+  - Enable Ubuntu under Settings > Resources > WSL integration in Docker Desktop. If it is off, the terminal prints `The command 'docker' could not be found in this WSL 2 distro`.
+  - NVIDIA Container Toolkit is bundled with Docker Desktop; only the Windows NVIDIA driver is needed.
+  - Keep the repository, dataset and checkpoints under the WSL home directory, not under `/mnt/c`.
+- Verified on: Ubuntu 20.04 + RTX 2080 Ti, and Windows 11 25H2 + WSL 2 (Ubuntu 26.04) + Docker Desktop (Docker 29.4.3) + GTX 1050 (driver 560.94)
+
+### Quick check with the test data
+
+- Before copying the full dataset, the 40-sample test data (`docker_test_data_40samples.tar.gz`) can be used to confirm that training and evaluation run.
+- Extracting it creates `data/`. In `check_setup.py`, `(40 files)` for every folder and `-` for every checkpoint is the expected output.
+
+```bash
+tar -xzf docker_test_data_40samples.tar.gz -C .
+bash docker/setup_env.sh
+docker compose run --rm rmp python scripts/check_setup.py
+docker compose run --rm rmp python -m ikeee.bratlab_train --mode train \
+    --root data --freq 4750 --model radiounet --size small \
+    --batch_size 4 --amp --epochs 1 --num_workers 2 \
+    --save_dir model_checkpoints/checkpoints_test_radiounet_small_4750
+docker compose run --rm rmp python -m ikeee.bratlab_train --mode eval \
+    --root data --freq 4750 --model radiounet --size small \
+    --ckpt model_checkpoints/checkpoints_test_radiounet_small_4750/best.pth \
+    --result_dir runs/eval_test_radiounet_small_4750
+```
+
+- Evaluation ends with a table of Test RMSE, MAE, Bias and SSIM. The errors are large because the model is trained for one epoch only.
+- Use `--batch_size 2` if the GPU runs out of memory. The warning `UserWarning: Applied workaround for CuDNN issue, install nvrtc.so` can be ignored.
+- After the check, replace `data/` with the full dataset and run `setup_env.sh` again.
 
 ## Training
 
