@@ -94,7 +94,7 @@ model_checkpoints/
 
 ## Installation with Docker
 
-A step-by-step guide in Korean is in `docs/[OutdoorRMP]설치메뉴얼.docx`.
+Korean manuals: installation guide `docs/[OutdoorRMP]설치매뉴얼.docx` and code guide `docs/[OutdoorRMP]코드매뉴얼.docx`.
 
 - Requirements: Docker Engine, Docker Compose v2, NVIDIA driver and NVIDIA Container Toolkit
 - Image: `outdoor-rmp:latest` (CUDA 11.8, PyTorch 2.2.0)

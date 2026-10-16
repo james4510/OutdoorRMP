@@ -93,7 +93,7 @@ model_checkpoints/
 
 ## Docker로 설치
 
-- 단계별 설치 방법은 `docs/[OutdoorRMP]설치메뉴얼.docx`에 정리했다.
+- 설치 절차는 `docs/[OutdoorRMP]설치매뉴얼.docx`, 코드 구조와 옵션은 `docs/[OutdoorRMP]코드매뉴얼.docx`에 정리했다.
 - 필요 환경: Docker Engine, Docker Compose v2, NVIDIA 드라이버, NVIDIA Container Toolkit
 - 이미지: `outdoor-rmp:latest` (CUDA 11.8, PyTorch 2.2.0)
 - 저장소 폴더를 컨테이너의 `/workspace`에 연결하므로, 결과 파일은 호스트의 저장소 폴더에 저장된다.
